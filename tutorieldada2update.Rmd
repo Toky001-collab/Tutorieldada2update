@@ -3,7 +3,7 @@ title: "Tutorieldada2update"
 output: github_document
 Author: Toky Emmanuel Rabemanana Rahaga
 ---
-#Description: DADA2 est un pipeline bioinformatique conçu pour traiter des séquences obtenues via le séquençage d'amplicons, principalement utilisés dans les études de microbiomes. Il vise à corriger les erreurs de séquençage et à identifier des Variants de Séquences d'Amplicons (ASV) exacts, au lieu de regrouper les séquences similaires à 97% en Unités Taxonomiques Opérationnelles (OTUs), comme le font d'autres outils comme QIIME ou Mothur. Cela permet une identification plus précise des microbes présents dans un échantillon. (Callahan et al.,2016)
+#Description: DADA2 est un pipeline bioinformatique conçu pour traiter des séquences obtenues via le séquençage d'amplicons, principalement utilisés dans les études de microbiomes. Il vise à corriger les erreurs de séquençage et à identifier des Variants de Séquences d'Amplicons (ASV) exacts, au lieu de regrouper les séquences similaires à 97% en Unités Taxonomiques Opérationnelles (OTUs), comme le font d'autres outils comme QIIME ou Mothur. Cela permet une identification plus précise des microorganismes présents dans un échantillon. (Callahan et al.,2016)
 
 #DADA2 modélise les erreurs de séquençage pour distinguer les erreurs dues au processus de séquençage des véritables variations biologiques, et élimine également les chimères, qui sont des artefacts de PCR. Finalement, il attribue une classification taxonomique aux séquences corrigées, facilitant ainsi l'analyse de la diversité microbienne dans les études environnementales, de la santé, etc.
 
