@@ -156,36 +156,55 @@ dim(seqtab.nochim)
 sum(seqtab.nochim)/sum(seqtab)
 ```
 ```{r}
-#Track reads through the pipeline
+#Extraction des séquences uniques [function()] et comptage [sum()]
+
 getN <- function(x) sum(getUniques(x))
+
+# Création de matrice de suivi avec les statistiques de chaque étape du traitement
+##paramètres: out : Nombre de séquences après l'étape filterAndTrim(), sapply(dadaFs, getN) : Nombre de séquences uniques après dénucléotidation des lectures "forward", sapply(dadaRs, getN) : Nombre de séquences uniques après dénucléotidation des lectures "reverse, sapply(mergers, getN) : Nombre de séquences uniques après fusion des lectures avant et arrière, rowSums(seqtab.nochim) : Nombre total d'ASVs non chimériques après suppression des chimères
+
 track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
-# If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)
+
+# Modificartion des noms des colonnes de la matrice "track", assignation et affichage
+
+##But: inclure des descriptions appropriées
+###->Table d'échantillons : Chaque ligne de la table correspond à un échantillon spécifique, vérification des données : La fonction sample.names.head(track) affiche les premières lignes de la table. Donc, Suivi des séquences : permet d'observer l'évolution des séquences à chaque étape du pipeline DADA2.
+
 colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
 rownames(track) <- sample.names
 head(track)
 ```
 ```{r}
-#Assign taxonomy
+#Assigner les données taxonomiques non chimériques à l'aide d'une base SILVA
+
+##PS: préalablement telecharger le fichier Silva v132+verification s'il est bien installé
+
 taxa <- assignTaxonomy(seqtab.nochim, "/home/rstudio/Tutorieldada2update/silva_nr_v132_train_set.fa.gz", multithread=TRUE)
 ```
 ```{r}
 taxa <- addSpecies(taxa, "/home/rstudio/Tutorieldada2update/silva_species_assignment_v132.fa.gz")
 ```
 ```{r}
-taxa.print <- taxa # Removing sequence rownames for display only
+#Mise des résultats de taxonomie dans une nouvelle variable
+
+taxa.print <- taxa 
+
+#Retirer les noms de lignes[rowname()<-NULL] pour l'affichage [head] uniquement des taxonomies
+
 rownames(taxa.print) <- NULL
 head(taxa.print)
 ```
 ```{r}
+#Appeler le package DECIPHER pour le traitement des séquences, autre alternative utilisation classifieur par des sifer
+
 library(DECIPHER); packageVersion("DECIPHER")
 ```
 ```{r}
-#autre alternative utilisation classifier par des sifer
 dna <- DNAStringSet(getSequences(seqtab.nochim)) # Create a DNAStringSet from the ASVs
-load("/home/rstudio/Tutorieldada2update/SILVA_SSU_r138_2019.RData") # CHANGE TO THE PATH OF YOUR TRAINING SET
-ids <- IdTaxa(dna, trainingSet, strand="top", processors=NULL, verbose=FALSE) # use all processors
-ranks <- c("domain", "phylum", "class", "order", "family", "genus", "species") # ranks of interest
-# Convert the output object of class "Taxa" to a matrix analogous to the output from assignTaxonomy
+load("/home/rstudio/Tutorieldada2update/SILVA_SSU_r138_2019.RData") 
+ids <- IdTaxa(dna, trainingSet, strand="top", processors=NULL, verbose=FALSE) 
+ranks <- c("domain", "phylum", "class", "order", "family", "genus", "species")
+# Convertir l'objet de sortie de la classe 'Taxa' en une matrice analogue à celle produite par assignTaxonomy
 taxid <- t(sapply(ids, function(x) {
         m <- match(ranks, x$rank)
         taxa <- x$taxon[m]
@@ -195,13 +214,20 @@ taxid <- t(sapply(ids, function(x) {
 colnames(taxid) <- ranks; rownames(taxid) <- getSequences(seqtab.nochim)
 ```
 ```{r}
-#Evaluate accuracy
+#Evaluation de la precision
+## Extraction des séquences uniques de l'échantillon "Mock"
+
 unqs.mock <- seqtab.nochim["Mock",]
-unqs.mock <- sort(unqs.mock[unqs.mock>0], decreasing=TRUE) # Drop ASVs absent in the Mock
+
+## Conserver uniquement les ASVs présentes dans MOK en les classant par ordre décroissant.
+unqs.mock <- sort(unqs.mock[unqs.mock>0], decreasing=TRUE) 
 cat("DADA2 inferred", length(unqs.mock), "sample sequences present in the Mock community.\n")
 ```
 
 ```{r}
+#Vérification des Correspondances des ASVs avec les Séquences de Référence dans l'Échantillon Mock
+
+##->Le fichier HMP_MOCK.v35.fasta est chargé et enregistré sous mock.ref. Pour chaque ASV identifiée dans l'échantillon Mock, il est vérifié si son nom figure dans les séquences de référence contenues dans mock.ref. Si c'est le cas, cette ASV est considérée comme une correspondance[cat("Of those")]. Un message affiche le nombre d'ASVs qui correspondent exactement aux séquences de référence.
 mock.ref <- getSequences(file.path(path, "HMP_MOCK.v35.fasta"))
 match.ref <- sum(sapply(names(unqs.mock), function(x) any(grepl(x, mock.ref))))
 cat("Of those,", sum(match.ref), "were exact matches to the expected reference sequences.\n")
