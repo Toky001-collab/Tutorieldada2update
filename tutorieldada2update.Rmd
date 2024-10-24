@@ -140,11 +140,19 @@ dim(seqtab)
 table(nchar(getSequences(seqtab)))
 ```
 ```{r}
-#Remove chimeras
+#Détection et suppression des séquences chimériques générées en utilisant une méthode de consensus
+
 seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
+
+#Presentation des dimensions de la table de sequence après suppression des séquences chimériques
+##->Résultats :Échantillons restants : 20, Chimères identifiées : 61, ASVs restantes : 232
+
 dim(seqtab.nochim)
 ```
 ```{r}
+# Calcul de la proportion de séquences non chimériques par rapport à la table de séquences initiales
+##->Résultat: 96,4 % des séquences étaient non chimériques dans la table initiale et ont été conservées dans la table seqtab.nochim après la suppression des chimères
+
 sum(seqtab.nochim)/sum(seqtab)
 ```
 ```{r}
