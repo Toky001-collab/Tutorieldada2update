@@ -232,28 +232,74 @@ mock.ref <- getSequences(file.path(path, "HMP_MOCK.v35.fasta"))
 match.ref <- sum(sapply(names(unqs.mock), function(x) any(grepl(x, mock.ref))))
 cat("Of those,", sum(match.ref), "were exact matches to the expected reference sequences.\n")
 ```
-#Bonus: Handoff to phyloseq
+
+
 ```{r}
+#BONUS: Transfert à Phyloseq
+
+#Chargement du package phyloseq
+
+##Pour info: cette library sera utilisée pour organiser, analyser et visualiser les données de séquences après le traitement par DADA2. Une fois que les séquences d'amplification (ASVs) ont été générées et classifiées, phyloseq permet de manipuler ces données taxonomiques et écologiques (par exemple, calculer la diversité alpha/bêta, générer des graphiques comme des arbres phylogénétiques ou des heatmaps).
+
 library(phyloseq); packageVersion("phyloseq")
 ```
 ```{r}
+#Chargement du package Biostrings
+
+##Pour info: Dans DADA2, Biostrings pourrait être utilisée pour extraire des séquences d'ADN uniques, les comparer, ou effectuer d'autres manipulations sur les séquences d'ASVs.
+
 library(Biostrings); packageVersion("Biostrings")
 ```
 ```{r}
+#Chargement du package ggplot2
+
+##Pour info:Il est souvent utilisé pour visualiser les résultats après l'analyse DADA2. Il pourrait être utilisé pour produire des graphiques de qualité, comme des graphiques de distribution des ASVs, des courbes de diversité, ou encore pour visualiser des taux d'erreur et la qualité des séquences dans les étapes de filtrage.
+
 library(ggplot2); packageVersion("ggplot2")
 ```
 ```{r}
+#Application d'un thème noir et blanc par défaut aux graphiques ggplot2
 theme_set(theme_bw())
 ```
 ```{r}
+#Extraction des noms des échantillons à partir de la table des séquences non chimériques
+
 samples.out <- rownames(seqtab.nochim)
+
+#Extraction de la première partie des chaînes de caractères contenues dans samples.out, avant chaque occurrence de la lettre "D", et stocke cette partie dans l'objet subject
+
 subject <- sapply(strsplit(samples.out, "D"), `[`, 1)
+
+#Extraction du premier caractère de chaque élément dans la variable subject et implementer dans le vecteur gender
+
 gender <- substr(subject,1,1)
+
+#Extraction de l'identifiant du sujet en supprimant la première lettre
+
 subject <- substr(subject,2,999)
+
+#Exctraction la deuxième partie des chaînes de caractères de samples.out[sequence] (après la lettre "D") et la convertit en un nombre entier, qui est ensuite stocké dans l'objet day
+
 day <- as.integer(sapply(strsplit(samples.out, "D"), `[`, 2))
+
+#Création du dataframe samdf
+##->Cette ligne crée un dataframe nommé samdf à partir de trois vecteurs : subject, gender, et day. Chaque vecteur représente une colonne du dataframe.
+
 samdf <- data.frame(Subject=subject, Gender=gender, Day=day)
+
+#Ajout d'une colonne When avec la valeur par défaut "Early"
+##->Une nouvelle colonne When est ajoutée au dataframe, et tous les échantillons sont initialement étiquetés comme "Early". Cela signifie que, par défaut, tous les échantillons sont considérés comme ayant été prélevés tôt dans l'étude.
+
 samdf$When <- "Early"
+
+#Modification de la colonne When en fonction de la valeur de Day
+##->Cette ligne modifie les valeurs dans la colonne When pour les échantillons où le nombre de jours (Day) est supérieur à 100. Pour ces échantillons, la valeur de When est changée de "Early" à "Late". Cela permet de catégoriser les échantillons selon qu'ils ont été prélevés tôt ou tard dans l'étude.
+
 samdf$When[samdf$Day>100] <- "Late"
+
+#Définition des noms de ligne du dataframe samdf
+##->Cette ligne attribue des noms de ligne au dataframe samdf en utilisant le vecteur samples.out. Cela permet de rendre le dataframe plus facile à interpréter et à manipuler en associant chaque ligne à un nom d'échantillon spécifique.
+
 rownames(samdf) <- samples.out
 ```
 ```{r}
