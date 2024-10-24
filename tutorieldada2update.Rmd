@@ -198,16 +198,21 @@ taxa.print <- taxa
 rownames(taxa.print) <- NULL
 head(taxa.print)
 ```
+
+
+
 ```{r}
 #Appeler le package DECIPHER pour le traitement des séquences, autre alternative utilisation classifieur par des sifer
 
 library(DECIPHER); packageVersion("DECIPHER")
 ```
 ```{r}
-dna <- DNAStringSet(getSequences(seqtab.nochim)) # Create a DNAStringSet from the ASVs
+# Créer un DNAStringSet à partir des ASV
+dna <- DNAStringSet(getSequences(seqtab.nochim)) 
 load("/home/rstudio/Tutorieldada2update/SILVA_SSU_r138_2019.RData") 
 ids <- IdTaxa(dna, trainingSet, strand="top", processors=NULL, verbose=FALSE) 
 ranks <- c("domain", "phylum", "class", "order", "family", "genus", "species")
+
 # Convertir l'objet de sortie de la classe 'Taxa' en une matrice analogue à celle produite par assignTaxonomy
 taxid <- t(sapply(ids, function(x) {
         m <- match(ranks, x$rank)
@@ -217,6 +222,9 @@ taxid <- t(sapply(ids, function(x) {
 }))
 colnames(taxid) <- ranks; rownames(taxid) <- getSequences(seqtab.nochim)
 ```
+
+
+
 ```{r}
 #Evaluation de la precision
 ## Extraction des séquences uniques de l'échantillon "Mock"
