@@ -2,11 +2,13 @@
 title: "Tutoriel DADA2"
 output: github_document
 Fait par: Toky Emmanuel Rabemanana Rahaga
+---
 
 ```{r}
-library(dada2); packageVersion("dada2")
-
+library(dada2)
+packageVersion("dada2")
 ```
+
 ```{r}
 path <- "/home/rstudio/Tutorieldada2update/MiSeq_SOP"
 list.files(path)
