@@ -3,33 +3,48 @@ title: "Tutoriel DADA2"
 output: github_document
 Fait par: Toky Emmanuel Rabemanana Rahaga
 ---
----
-Importer le package dada2 pour l'analyse des données de séquençage
----
 
 ```{r}
 
-#Importer le package dada2 pour l'analyse des données de séquençage
+#Importation du package dada2 pour l'analyse des données de séquençage
 
 library(dada2)
 packageVersion("dada2")
 ```
 
 ```{r}
+
+# Spécification du chemin du répertoire où se trouvent les fichiers fastq
+
 path <- "/home/rstudio/Tutorieldada2update/MiSeq_SOP"
+
+#verification si tout le repertoire est bien present
+
 list.files(path)
 ```
 
 
 ```{r}
+
+#Extraire les fichiers FASTQ de lecture avant (R1) dont le nom contient _R1_001.fastq" puis pareil avec R2
+
 fnFs <- sort(list.files(path, pattern="_R1_001.fastq", full.names = TRUE))
 fnRs <- sort(list.files(path, pattern="_R2_001.fastq", full.names = TRUE))
+
+# Obtention des noms des échantillons en récupérant la première partie du nom de fichier, en les séparant par le caractère '_'
+
 sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
 ```
 ```{r}
+
+# Génération d'un graphique des profils de qualité pour les deux premiers fichiers R1
+
 plotQualityProfile(fnFs[1:2])
 ```
 ```{r}
+
+# Génération d'un graphique des profils de qualité pour les deux premiers fichiers R2
+
 plotQualityProfile(fnRs[1:2])
 ```
 ```{r}
