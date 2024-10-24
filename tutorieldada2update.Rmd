@@ -76,37 +76,67 @@ head(out)
 ```{r}
 #Évaluer les erreurs dans les séquences avant à partir des fichiers filtrés
 
-##->DADA2 développe un modèle d'erreur pour les séquences avant afin de corriger les erreurs de séquençage. Pour ce faire, elle s'appuie sur les séquences filtrées (contenues dans filtFs) pour estimer les erreurs typiques de séquençage, telles que les substitutions et les insertions. errF est l'objet qui contient le modèle d'erreur appris pour les séquences avant
+##->DADA2 développe un modèle d'erreur pour les séquences R1(Forward) afin de corriger les erreurs de séquençage. Pour ce faire, elle s'appuie sur les séquences filtrées (contenues dans filtFs) pour estimer les erreurs typiques de séquençage, telles que les substitutions, les insertions, etc. errF est l'objet qui contient le modèle d'erreur appris pour les séquences R1
 
 errF <- learnErrors(filtFs, multithread=TRUE)
 ```
 ```{r}
+## Meme principe que précedemment avec la séquence R2(Reverse)
 errR <- learnErrors(filtRs, multithread=TRUE)
 ```
 ```{r}
+#Représentation visuelle des taux d'erreur estimés des lectures R1
+
+## création d'un graphique illustrant les erreurs de séquençage apprises dans les séquences avant (errF). Ce graphique permet de visualiser le taux d'erreur en fonction des scores de qualité (Phred) et d’évaluer la qualité globale de vos données de séquençage. Avec nominalQ=TRUE, cela signifie que les scores de qualité (Q-scores) sur l'axe des ordonnées du graphique seront présentés avec leurs valeurs nominales, c'est-à-dire en Phred
+
 plotErrors(errF, nominalQ=TRUE)
 ```
 ```{r}
+#Application du modèle d'erreur estimé aux lectures (R1)
+
+##->utilisation de la fonction dada pour les séquences filtrées ainsi que le modèle d'erreur estimé, et pour appliquer une approche fondée sur le maximum de vraisemblance afin d'identifier les variantes de séquences précises, appelées ASVs (Amplicon Sequence Variants). Les résultats montrent que pour l'échantillon 1, nous avons 7113 lectures (fragments d'ADN séquencés après le filtrage), dont 1979 sont des séquences uniques
+
 dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
 ```
 ```{r}
+# idem que precedement mais cette fois-ci pour R2
 dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
 ```
 ```{r}
+
+#Representation du processus DADA appliqué pour le premier échantillon
+
 dadaFs[[1]]
 ```
 ```{r}
+
+#Fusion des résultats des lectures R1 et R2 pour créer des séquences d'amplicon assemblées 
+
 mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
-# Inspect the merger data.frame from the first sample
+
+#Apperçu des premières séquences fusionnées pour le premier échantillon dans l'objet mergers
+
 head(mergers[[1]])
 ```
 ```{r}
-#Construct sequence table
+# Générer une table de séquences (ASV) à partir des séquences fusionnées
+
+##->Colonne=ASV, et ligne=abondance dans chaque échantillon. Résumé complet des ASVs détectées et de leur abondance dans tes échantillons.
+
 seqtab <- makeSequenceTable(mergers)
+
+#Présentation des dimensions de la table de séquences
+
+##->Total d'échantillons : 20 (représentés par des lignes).
+##->Total d'ASVs identifiées dans chaque échantillon : 293 (représentées par des colonnes
+
 dim(seqtab)
 ```
 ```{r}
-# Inspect distribution of sequence lengths
+# Détermination du nombre de séquences par longueur et affichage de la distribution
+
+##->Fonction nchar() : Calcule la longueur de chaque ASV; fonction table() : Compte le nombre d'ASVs ayant une longueur spécifique.Interprétation des résultats : 88 ASVs ont une longueur de 252 bases.
+
 table(nchar(getSequences(seqtab)))
 ```
 ```{r}
