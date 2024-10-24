@@ -2,6 +2,11 @@
 title: "Tutoriel DADA2"
 output: github_document
 Fait par: Toky Emmanuel Rabemanana Rahaga
+
+Description: DADA2 est un pipeline bioinformatique conçu pour traiter des séquences obtenues via le séquençage d'amplicons, principalement utilisés dans les études de microbiomes. Il vise à corriger les erreurs de séquençage et à identifier des Variants de Séquences d'Amplicons (ASV) exacts, au lieu de regrouper les séquences similaires à 97% en Unités Taxonomiques Opérationnelles (OTUs), comme le font d'autres outils comme QIIME ou Mothur. Cela permet une identification plus précise des microbes présents dans un échantillon. (Callahan et al.,2016)
+
+DADA2 modélise les erreurs de séquençage pour distinguer les erreurs dues au processus de séquençage des véritables variations biologiques, et élimine également les chimères, qui sont des artefacts de PCR. Finalement, il attribue une classification taxonomique aux séquences corrigées, facilitant ainsi l'analyse de la diversité microbienne dans les études environnementales, de la santé, etc.
+
 ---
 
 ```{r}
@@ -303,36 +308,81 @@ samdf$When[samdf$Day>100] <- "Late"
 rownames(samdf) <- samples.out
 ```
 ```{r}
+#Construction d'un objet phyloseq à partir de la table d'abondance des OTU, des métadonnées des échantillons et des informations de taxonomie.
+
 ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE), 
                sample_data(samdf), 
                tax_table(taxa))
+
+#Retrait des échantillons de contrôle "Mock" du dataset pour concentrer l'analyse uniquement sur les échantillons d'intérêt.
+
 ps <- prune_samples(sample_names(ps) != "Mock", ps) # Remove mock sample
 ```
 ```{r}
+#Objectif dans ce chunk: association des séquences ADN à chaque taxon et les renommer en ASV pour une analyse plus structurée, facilitant le suivi et la comparaison des variants d'amplicon (ASV).
+
+#Création d'un objet DNAStringSet à partir des noms de taxons
+##->Création d'un objet DNAStringSet (de la bibliothèque Biostrings) en utilisant les noms des taxons présents dans l'objet ps. Cela permet de manipuler ces noms comme des séquences d'ADN.
 dna <- Biostrings::DNAStringSet(taxa_names(ps))
+
+#Affectation des noms de taxons à l'objet DNA(ADN)
 names(dna) <- taxa_names(ps)
+
+#Fusion des séquences ADN avec l'objet phyloseq
+##->Fusion de l'objet phyloseq ps avec l'objet dna contenant les séquences d'ADN, intégrant ainsi les informations ADN aux taxons dans l'objet phyloseq.
 ps <- merge_phyloseq(ps, dna)
+
+#Renommage des taxons en ASV
+##->Renomme chaque taxon avec un identifiant unique "ASV" (Amplicon Sequence Variant) suivi d'un numéro séquentiel (ex. ASV1, ASV2, etc.), facilitant leur identification dans l'analys
 taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
+
+#Retour de l'objet phyloseq mis à jour
+##->Retourne l'objet phyloseq ps, désormais enrichi des séquences ADN et des nouveaux noms de taxons basés sur les ASV.
 ps
 ```
-#Visualize alpha-diversity:
+
 ```{r}
+#Visualize alpha-diversity:
+##->Génèration d'un graphique de la diversité alpha (richesse des communautés) en utilisant les indices de Shannon et Simpson, avec les échantillons regroupés par "Day" et colorés en fonction de "When", afin de visualiser la variation de la diversité entre les phases Early et Late. Ce graphique permet d'examiner comment la diversité évolue au cours du temps et entre différents groupes de traitement.
+
 plot_richness(ps, x="Day", measures=c("Shannon", "Simpson"), color="When")
 ```
-#Ordinate:
+
 ```{r}
-# Transform data to proportions as appropriate for Bray-Curtis distances
+#Oordination: transformation des données en proportions pour le calcul des distances de Bray-Curtis
+
+##Transformation des Comptes en Proportions
+###->Transforme les comptes bruts des OTUs dans chaque échantillon en proportions. Pour chaque échantillon, les valeurs des OTUs sont divisées par le total des OTUs dans cet échantillon, donnant la proportion de chaque OTU. Objectif : Normaliser les données pour que les échantillons puissent être comparés de manière équitable, indépendamment du nombre total de séquences dans chaque échantillon.
+
 ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
+
+##Ordination par NMDS utilisant la distance de Bray-Curtis
+###->Application d'une méthode d'ordination NMDS (Non-metric Multidimensional Scaling) sur l'objet ps.prop pour explorer les relations entre les échantillons. La distance utilisée est la distance de Bray-Curtis, qui mesure la similarité/différence entre les communautés microbiennes dans les échantillons. Objectif : Visualiser la distribution des échantillons dans un espace à dimensions réduites, en fonction de la composition relative des communautés microbiennes.
+
 ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
 ```
 ```{r}
+#Visualisation de l'ordination NMDS avec les distances de Bray-Curtis
 plot_ordination(ps.prop, ord.nmds.bray, color="When", title="Bray NMDS")
 ```
-#Bar plot:
+
 ```{r}
+#Bar plot montrant la sélection et visualisation des taxons dominants dans Phyloseq
+
+##Sélection des 20 taxons les plus abondants
+###->Normalise les données en transformant les comptes bruts d’OTUs en proportions dans chaque échantillon (chaque OTU est divisé par le total des OTUs dans son échantillon).Objectif : Faciliter la comparaison des abondances relatives entre échantillons.
 top20 <- names(sort(taxa_sums(ps), decreasing=TRUE))[1:20]
+
+##Transformation des Comptes en Proportions. Objectif: faciliter la comparaison des abondances relatives entre échantillons 
 ps.top20 <- transform_sample_counts(ps, function(OTU) OTU/sum(OTU))
+
+##Filtrage de l'objet phyloseq pour ne conserver que les 20 taxons les plus abondants (ceux contenus dans top20), en supprimant les autres. Objectif : Réduire l’analyse aux taxons dominants pour simplifier la visualisation.
+
 ps.top20 <- prune_taxa(top20, ps.top20)
+
+##Création d'un diagramme en baton
+###->Génèration d'un barplot où les proportions des taxons (OTUs) sont représentées en fonction des jours (Day) sur l'axe des x. Les barres sont colorées selon la famille taxonomique (Family). La fonction facet_wrap divise le graphique en plusieurs panneaux en fonction de la colonne When (par exemple, Early et Late), avec des échelles ajustées pour chaque panneau. Objectif : Visualiser la répartition des 20 taxons dominants au fil du temps (Day) et entre différentes phases (When: early and late).
+
 plot_bar(ps.top20, x="Day", fill="Family") + facet_wrap(~When, scales="free_x")
 ```
 
