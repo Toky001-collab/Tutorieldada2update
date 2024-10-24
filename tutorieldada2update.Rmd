@@ -48,21 +48,36 @@ plotQualityProfile(fnFs[1:2])
 plotQualityProfile(fnRs[1:2])
 ```
 ```{r}
-# Place filtered files in filtered/ subdirectory
+# Définition des chemins: des fichiers filtrés pour les premières lectures (R1) en les nommant avec "_F_filt.fastq.gz".
+
 filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
+
+#Définition des chemins: des fichiers filtrés pour les secondes lectures (R2) en les nommant avec "_R_filt.fastq.gz"
+
 filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
+
+#Attribution des noms d'échantillons aux fichiers filtrés R1 et R2 afin de faciliter le suivi.
+
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
 ```
 
 ```{r}
+
+#->Filtrage et de nettoyage multiparamètres des séquences FASTQ pour plusieurs échantillons 
+
+##-> la longueur de coupe : les séquences avant (fnFs) sont tronquées à 240 bases, tandis que les séquences arrière (fnRs) le sont à 160 bases. De plus, le seuil d'erreur maximal est fixé à maxEE=(2,2), ce qui signifie que les séquences avec plus de 2 erreurs cumulées seront éliminées. Si une séquence contient une base N, elle sera également rejetée (maxN=0). Les bases avec un score de qualité inférieur à 2 (truncQ=2) seront coupées ou supprimées. Les séquences de phix seront retirées (rm.phix=true), et les fichiers filtrés seront compressés au format gzip (compress=True). Enfin, la variable out stocke le résultat de la fonction filterAndTrim(), qui fournit un tableau avec des informations sur le nombre de séquences avant et après le filtrage
+
 out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160),
               maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
               compress=TRUE, multithread=TRUE) # On Windows set multithread=FALSE
 head(out)
 ```
 ```{r}
-#Learn the Error Rates
+#Évaluer les erreurs dans les séquences avant à partir des fichiers filtrés
+
+##->DADA2 développe un modèle d'erreur pour les séquences avant afin de corriger les erreurs de séquençage. Pour ce faire, elle s'appuie sur les séquences filtrées (contenues dans filtFs) pour estimer les erreurs typiques de séquençage, telles que les substitutions et les insertions. errF est l'objet qui contient le modèle d'erreur appris pour les séquences avant
+
 errF <- learnErrors(filtFs, multithread=TRUE)
 ```
 ```{r}
