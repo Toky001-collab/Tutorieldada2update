@@ -3,6 +3,9 @@ title: "Tutoriel DADA2"
 output: github_document
 Fait par: Toky Emmanuel Rabemanana Rahaga
 ---
+---
+Importer le package dada2 pour l'analyse des données de séquençage
+---
 
 ```{r}
 
